@@ -1,6 +1,9 @@
-use crate::renderers::{ScalingMatrix, ScalingRenderer};
-use crate::{Error, Pixels, PixelsContext, SurfaceSize, SurfaceTexture, TextureError};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
+
+use crate::{
+    renderers::{ScalingMatrix, ScalingRenderer},
+    Error, Pixels, PixelsContext, SurfaceSize, SurfaceTexture, TextureError,
+};
 
 /// A builder to help create customized pixel buffers.
 pub struct PixelsBuilder<'req, 'dev, 'win, W: HasRawWindowHandle + HasRawDisplayHandle> {
@@ -17,6 +20,7 @@ pub struct PixelsBuilder<'req, 'dev, 'win, W: HasRawWindowHandle + HasRawDisplay
     surface_texture_format: Option<wgpu::TextureFormat>,
     clear_color: wgpu::Color,
     blend_state: wgpu::BlendState,
+    alpha_mode: wgpu::CompositeAlphaMode,
 }
 
 impl<'req, 'dev, 'win, W: HasRawWindowHandle + HasRawDisplayHandle>
@@ -64,6 +68,7 @@ impl<'req, 'dev, 'win, W: HasRawWindowHandle + HasRawDisplayHandle>
             surface_texture_format: None,
             clear_color: wgpu::Color::BLACK,
             blend_state: wgpu::BlendState::ALPHA_BLENDING,
+            alpha_mode: wgpu::CompositeAlphaMode::Opaque,
         }
     }
 
@@ -206,6 +211,16 @@ impl<'req, 'dev, 'win, W: HasRawWindowHandle + HasRawDisplayHandle>
         self
     }
 
+    /// Set the alpha mode.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the alpha mode is unsupported by the adapter.
+    pub fn alpha_mode(mut self, alpha_mode: wgpu::CompositeAlphaMode) -> Self {
+        self.alpha_mode = alpha_mode;
+        self
+    }
+
     /// Set the clear color.
     ///
     /// Allows customization of the background color and the border drawn for non-integer scale
@@ -319,7 +334,7 @@ impl<'req, 'dev, 'win, W: HasRawWindowHandle + HasRawDisplayHandle>
         let mut pixels = Vec::with_capacity(pixels_buffer_size);
         pixels.resize_with(pixels_buffer_size, Default::default);
 
-        let alpha_mode = surface_capabilities.alpha_modes[0];
+        let alpha_mode = self.alpha_mode;
 
         // Instantiate the Pixels struct
         let context = PixelsContext {
